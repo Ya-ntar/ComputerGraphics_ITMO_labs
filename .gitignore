@@ -39,3 +39,5 @@
 
 # debug information files
 *.dwo
+/Lab1_3_OpenGLatHome/cmake-build-debug
+/Lab1_3_OpenGLatHome/.idea
