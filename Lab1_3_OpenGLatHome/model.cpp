@@ -3,52 +3,94 @@
 #include <fstream>
 #include <sstream>
 #include <vector>
+#include <stdexcept>
 #include "model.h"
 
-Model::Model(const char *filename) : verts_(), faces_() {
-    std::ifstream in;
-    in.open (filename, std::ifstream::in);
-    if (in.fail()) return;
+void Model::parse_face(std::istringstream &iss)
+{
+    char c;
+    iss >> c;
+
+    std::vector<int> face;
+    face.reserve(3);
+
+    std::string vertdef;
+    while (iss >> vertdef) {
+        std::istringstream viss(vertdef);
+        int idx = 0, trash = 0;
+        char slash;
+
+        // parse vertex/texture/normal
+        // Format: v/t/n or v//n or v
+        viss >> idx;
+        if (viss.peek() == '/') {
+            viss >> slash;
+            if (viss.peek() != '/') viss >> trash;  // texture index
+            if (viss.peek() == '/') viss >> slash >> trash; // normal index
+        }
+
+        idx--;  // OBJ indices are 1-based
+        face.push_back(idx);
+    }
+
+    if (!face.empty()) {
+        faces_.push_back(face);
+    }
+}
+
+void Model::parse_vertice(std::istringstream &iss)
+{
+    char c;
+    Vec3f v;
+    iss >> c >> v.raw[0] >> v.raw[1] >> v.raw[2];
+    verts_.push_back(v);
+}
+
+void Model::parse_file(std::ifstream &in)
+{
     std::string line;
-    while (!in.eof()) {
-        std::getline(in, line);
-        std::istringstream iss(line.c_str());
-        char trash;
-        if (!line.compare(0, 2, "v ")) {
-            iss >> trash;
-            Vec3f v;
-            for (int i=0;i<3;i++) iss >> v.raw[i];
-            verts_.push_back(v);
-        } else if (!line.compare(0, 2, "f ")) {
-            std::vector<int> f;
-            int itrash, idx;
-            iss >> trash;
-            while (iss >> idx >> trash >> itrash >> trash >> itrash) {
-                idx--; // in wavefront obj all indices start at 1, not zero
-                f.push_back(idx);
-            }
-            faces_.push_back(f);
+    verts_.reserve(1000);
+    faces_.reserve(1000);
+
+    while (std::getline(in, line)) {
+        if (line.size() < 2) continue;
+
+        std::istringstream iss(line);
+        if (line.rfind("v ", 0) == 0) {
+            parse_vertice(iss);
+        }
+        else if (line.rfind("f ", 0) == 0) {
+            parse_face(iss);
         }
     }
-    std::cerr << "# v# " << verts_.size() << " f# "  << faces_.size() << std::endl;
+
+    std::cerr << "# v: " << verts_.size()
+        << "   f: " << faces_.size() << std::endl;
 }
 
-Model::~Model() {
+Model::Model(const char* filename) {
+    std::ifstream in(filename);
+    if (!in) {
+        throw std::runtime_error("Failed to open model file: " + std::string(filename));
+    }
+
+    parse_file(in);
 }
 
-int Model::nverts() {
-    return (int)verts_.size();
+Model::~Model() = default;
+
+size_t Model::nverts() const {
+    return verts_.size();
 }
 
-int Model::nfaces() {
-    return (int)faces_.size();
+size_t Model::nfaces() const {
+    return faces_.size();
 }
 
-std::vector<int> Model::face(int idx) {
-    return faces_[idx];
+const std::vector<int>& Model::face(int idx) const {
+    return faces_.at(idx);
 }
 
-Vec3f Model::vert(int i) {
-    return verts_[i];
+const Vec3f& Model::vert(int i) const {
+    return verts_.at(i);
 }
-
