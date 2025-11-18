@@ -42,7 +42,7 @@ void Model::parse_vertice(std::istringstream &iss)
 {
     char c;
     Vec3f v;
-    iss >> c >> v.raw[0] >> v.raw[1] >> v.raw[2];
+    iss >> c >> v.x >> v.y >> v.z;
     verts_.push_back(v);
 }
 

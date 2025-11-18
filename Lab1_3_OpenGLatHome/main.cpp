@@ -14,8 +14,8 @@
 
 const auto TGA_FILE_NAME = "output.tga";
 const auto OUTPUT_FILE_NAME = "output.png";
-constexpr int width = 800;
-constexpr int height = 800;
+constexpr int width = 1800;
+constexpr int height = 1800;
 
 void convertTGAtoPNG(const char* inFile, const char* outFile)
 {
@@ -54,9 +54,26 @@ void draw_vertices(TGAImage& image)
     }
 }
 
+void zbuf_debug(const std::vector<float>& zbuffer)
+{
+    // dump z-buffer (debugging purposes only)
+    TGAImage zbimage(width, height, TGAImage::GRAYSCALE);
+    for (int i = 0; i < width; i++)
+    {
+        for (int j = 0; j < height; j++)
+        {
+            zbimage.set(i, j, TGAColor(zbuffer[i + j * width], 1));
+        }
+    }
+    zbimage.flip_vertically();
+    zbimage.write_tga_file("zbuffer.tga");
+}
+
 void draw_vertices_colored(TGAImage& image)
 {
-    auto model = Model("carrot_soup/african_head.obj");
+    auto model = Model("carrot_soup/carrot_soup.obj");
+    std::vector zbuffer(width * height, std::numeric_limits<float>::min());
+
 
     Vec3f light_dir(0, 0, -1);
 
@@ -64,7 +81,7 @@ void draw_vertices_colored(TGAImage& image)
     {
         const std::vector<int>& current_face = model.face(face_index);
 
-        std::array<Vec2i, 3> screen_points;
+        std::array<Vec3i, 3> screen_points;
         std::array<Vec3f, 3> world_points;
 
         for (int vertex_index = 0; vertex_index < 3; vertex_index++)
@@ -73,18 +90,20 @@ void draw_vertices_colored(TGAImage& image)
 
             float screen_x = (vertex.x + 1.0f) * width / 2.0f;
             float screen_y = (vertex.y + 1.0f) * height / 2.0f;
+            float screen_z = (vertex.z + 1.0f) * 512 / 2.0f;
 
-            screen_points[vertex_index] = Vec2i(static_cast<int>(screen_x), static_cast<int>(screen_y));
+            screen_points[vertex_index] = Vec3i(static_cast<int>(screen_x), static_cast<int>(screen_y),
+                                                static_cast<int>(screen_z));
             world_points[vertex_index] = vertex;
         }
 
         Vec3f edge1 = world_points[2] - world_points[0];
         Vec3f edge2 = world_points[1] - world_points[0];
-        Vec3f face_normal = edge1 ^ edge2;
+        Vec3f face_normal = edge1.cross(edge2);
 
-        face_normal.normalize();
+        face_normal = face_normal.normalized();
 
-        float light_intensity = face_normal * light_dir;
+        float light_intensity = face_normal.dot(light_dir);
 
         if (light_intensity > 0)
         {
@@ -96,9 +115,12 @@ void draw_vertices_colored(TGAImage& image)
                 screen_points[1],
                 screen_points[2],
                 image,
-                triangle_color
+                triangle_color, zbuffer
             );
         }
+    }
+    {
+        zbuf_debug(zbuffer);
     }
 }
 
@@ -107,19 +129,12 @@ int main(int argc, char** argv)
 {
     TGAImage image(width, height, TGAImage::RGB);
     draw_vertices_colored(image);
-
-    /*
-    const std::array t0 = {Vec2i(30, 70), Vec2i(50, 160), Vec2i(70, 80)};
-    const std::array t1 = {Vec2i(180, 50), Vec2i(150, 1), Vec2i(70, 180)};
-    const std::array t2 = {Vec2i(180, 150), Vec2i(120, 160), Vec2i(130, 180)};
-
-    barycentric_triangle(t0[0], t0[1], t0[2], image, RED);
-    triangle(t1[0], t1[1], t1[2], image, WHITE);
-    barycentric_triangle(t2[0], t2[1], t2[2], image, GREEN);*/
     image.flip_vertically();
-
     image.write_tga_file(TGA_FILE_NAME);
 
+
     convertTGAtoPNG(TGA_FILE_NAME, OUTPUT_FILE_NAME);
+
+    convertTGAtoPNG("zbuffer.tga", "zbuffer.png");
     return 0;
 }
