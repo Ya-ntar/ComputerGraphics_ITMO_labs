@@ -5,7 +5,7 @@
 #include "libs/tgaimage.h"
 
 const TGAColor WHITE = TGAColor(255, 255, 255, 255);
-const TGAColor RED   = TGAColor(255, 0, 0, 255);
+const TGAColor RED = TGAColor(255, 0, 0, 255);
 const TGAColor GREEN = TGAColor(0, 255, 0, 255);
 
 inline void line(int x0, int y0, int x1, int y1, TGAImage& image, const TGAColor& color)
@@ -52,6 +52,9 @@ inline void line(const Vec2i& p0, const Vec2i& p1, TGAImage& image, const TGACol
     line(p0.x, p0.y, p1.x, p1.y, image, color);
 }
 
+
+
+
 inline void triangle(const Vec2i& t0, const Vec2i& t1, const Vec2i& t2, TGAImage& image, const TGAColor& color)
 {
     line(t0, t1, image, color);
@@ -59,4 +62,90 @@ inline void triangle(const Vec2i& t0, const Vec2i& t1, const Vec2i& t2, TGAImage
     line(t2, t0, image, color);
 }
 
+inline void draw_scanline(TGAImage& image, int x0, int x1, int y, const TGAColor& color)
+{
+    if (x0 > x1) std::swap(x0, x1);
+    for (int x = x0; x <= x1; x++)
+    {
+        image.set(x, y, color);
+    }
+}
+inline void barycentric_triangle(const Vec2i t0, const Vec2i t1, const Vec2i t2, TGAImage& image, const TGAColor& color)
+{
+    // Find bounding box
+    int minX = std::min(std::min(t0.x, t1.x), t2.x);
+    int maxX = std::max(std::max(t0.x, t1.x), t2.x);
+    int minY = std::min(std::min(t0.y, t1.y), t2.y);
+    int maxY = std::max(std::max(t0.y, t1.y), t2.y);
 
+    // Clamp to screen bounds
+    minX = std::max(0, minX);
+    maxX = std::min(image.get_width() - 1, maxX);
+    minY = std::max(0, minY);
+    maxY = std::min(image.get_height() - 1, maxY);
+
+    // edge vectors
+    Vec2i v0 = t1 - t0;
+    Vec2i v1 = t2 - t0;
+
+
+    for (int y = minY; y <= maxY; y++)
+    {
+        for (int x = minX; x <= maxX; x++)
+        {
+            Vec2i p(x, y);
+            Vec2i v2 = p - t0;
+
+            // dot products
+            float dot00 = v0.x * v0.x + v0.y * v0.y;
+            float dot01 = v0.x * v1.x + v0.y * v1.y;
+            float dot02 = v0.x * v2.x + v0.y * v2.y;
+            float dot11 = v1.x * v1.x + v1.y * v1.y;
+            float dot12 = v1.x * v2.x + v1.y * v2.y;
+
+            //  barycentric coordinates
+            float invDenom = 1.0f / (dot00 * dot11 - dot01 * dot01);
+            float u = (dot11 * dot02 - dot01 * dot12) * invDenom;
+            float v = (dot00 * dot12 - dot01 * dot02) * invDenom;
+
+            //  if point is in triangle
+            if (u >= 0 && v >= 0 && (u + v) <= 1)
+            {
+                image.set(x, y, color);
+            }
+        }
+    }
+}
+
+inline void colored_triangle(Vec2i t0, Vec2i t1, Vec2i t2, TGAImage& image, const TGAColor& color)
+{
+    // sort by y
+    if (t0.y > t1.y) std::swap(t0, t1);
+    if (t0.y > t2.y) std::swap(t0, t2);
+    if (t1.y > t2.y) std::swap(t1, t2);
+
+    // precompute slopes
+    float dx02 = (t2.x - t0.x) / (float)(t2.y - t0.y);
+    float dx01 = (t1.x - t0.x) / (float)(t1.y - t0.y);
+    float dx12 = (t2.x - t1.x) / (float)(t2.y - t1.y);
+
+    float x02 = t0.x;
+    float x01 = t0.x;
+
+    // top half
+    for (int y = t0.y; y < t1.y; y++)
+    {
+        draw_scanline(image, (int)x02, (int)x01, y, color);
+        x02 += dx02;
+        x01 += dx01;
+    }
+
+    // btm
+    float x12 = t1.x;
+    for (int y = t1.y; y <= t2.y; y++)
+    {
+        draw_scanline(image, (int)x02, (int)x12, y, color);
+        x02 += dx02;
+        x12 += dx12;
+    }
+}
