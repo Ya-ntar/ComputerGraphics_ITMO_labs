@@ -1,55 +1,182 @@
-#ifndef __GEOMETRY_H__
-#define __GEOMETRY_H__
-#include <ostream>
+#ifndef VEC_MATH_HPP
+#define VEC_MATH_HPP
+
 #include <cmath>
+#include <ostream>
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-template <class t> struct Vec2 {
-	union {
-		struct {t u, v;};
-		struct {t x, y;};
-		t raw[2];
-	};
-	Vec2() : u(0), v(0) {}
-	Vec2(t _u, t _v) : u(_u),v(_v) {}
-	inline Vec2<t> operator +(const Vec2<t> &V) const { return Vec2<t>(u+V.u, v+V.v); }
-	inline Vec2<t> operator -(const Vec2<t> &V) const { return Vec2<t>(u-V.u, v-V.v); }
-	inline Vec2<t> operator *(float f)          const { return Vec2<t>(u*f, v*f); }
-	template <class > friend std::ostream& operator<<(std::ostream& s, Vec2<t>& v);
+template <class T>
+struct Vec2
+{
+    T x{}, y{};
+
+    constexpr Vec2() = default;
+
+    constexpr Vec2(T x_, T y_) : x(x_), y(y_)
+    {
+    }
+
+    template <class U>
+    constexpr explicit Vec2(const Vec2<U>& v)
+        : x(static_cast<T>(v.x)), y(static_cast<T>(v.y))
+    {
+    }
+
+    constexpr T& operator[](int i) { return (i == 0) ? x : y; }
+    constexpr const T& operator[](int i) const { return (i == 0) ? x : y; }
+
+    constexpr Vec2 operator+(const Vec2& v) const { return {x + v.x, y + v.y}; }
+    constexpr Vec2 operator-(const Vec2& v) const { return {x - v.x, y - v.y}; }
+    constexpr Vec2 operator*(T s) const { return {x * s, y * s}; }
+    constexpr Vec2 operator/(T s) const { return {x / s, y / s}; }
+
+    Vec2& operator+=(const Vec2& v)
+    {
+        x += v.x;
+        y += v.y;
+        return *this;
+    }
+
+    Vec2& operator-=(const Vec2& v)
+    {
+        x -= v.x;
+        y -= v.y;
+        return *this;
+    }
+
+    Vec2& operator*=(T s)
+    {
+        x *= s;
+        y *= s;
+        return *this;
+    }
+
+    Vec2& operator/=(T s)
+    {
+        x /= s;
+        y /= s;
+        return *this;
+    }
+
+    constexpr T dot(const Vec2& v) const { return x * v.x + y * v.y; }
+    T length() const { return std::sqrt(dot(*this)); }
+
+    Vec2 normalized() const
+    {
+        T L = length();
+        return (L == T(0)) ? *this : (*this / L);
+    }
 };
 
-template <class t> struct Vec3 {
-	union {
-		struct {t x, y, z;};
-		struct { t ivert, iuv, inorm; };
-		t raw[3];
-	};
-	Vec3() : x(0), y(0), z(0) {}
-	Vec3(t _x, t _y, t _z) : x(_x),y(_y),z(_z) {}
-	inline Vec3<t> operator ^(const Vec3<t> &v) const { return Vec3<t>(y*v.z-z*v.y, z*v.x-x*v.z, x*v.y-y*v.x); }
-	inline Vec3<t> operator +(const Vec3<t> &v) const { return Vec3<t>(x+v.x, y+v.y, z+v.z); }
-	inline Vec3<t> operator -(const Vec3<t> &v) const { return Vec3<t>(x-v.x, y-v.y, z-v.z); }
-	inline Vec3<t> operator *(float f)          const { return Vec3<t>(x*f, y*f, z*f); }
-	inline t       operator *(const Vec3<t> &v) const { return x*v.x + y*v.y + z*v.z; }
-	float norm () const { return std::sqrt(x*x+y*y+z*z); }
-	Vec3<t> & normalize(t l=1) { *this = (*this)*(l/norm()); return *this; }
-	template <class > friend std::ostream& operator<<(std::ostream& s, Vec3<t>& v);
+template <class T>
+inline std::ostream& operator<<(std::ostream& os, const Vec2<T>& v)
+{
+    return os << "(" << v.x << ", " << v.y << ")";
+}
+
+
+template <class T>
+struct Vec3
+{
+    T x{}, y{}, z{};
+
+    constexpr Vec3() = default;
+
+    constexpr Vec3(T x_, T y_, T z_) : x(x_), y(y_), z(z_)
+    {
+    }
+
+    template <class U>
+    constexpr explicit Vec3(const Vec3<U>& v)
+        : x(static_cast<T>(v.x)),
+          y(static_cast<T>(v.y)),
+          z(static_cast<T>(v.z))
+    {
+    }
+
+    constexpr T& operator[](int i)
+    {
+        return (i == 0) ? x : (i == 1) ? y : z;
+    }
+
+    constexpr const T& operator[](int i) const
+    {
+        return (i == 0) ? x : (i == 1) ? y : z;
+    }
+
+    constexpr Vec3 operator+(const Vec3& v) const { return {x + v.x, y + v.y, z + v.z}; }
+    constexpr Vec3 operator-(const Vec3& v) const { return {x - v.x, y - v.y, z - v.z}; }
+    constexpr Vec3 operator*(T s) const { return {x * s, y * s, z * s}; }
+    constexpr Vec3 operator/(T s) const { return {x / s, y / s, z / s}; }
+
+    Vec3& operator+=(const Vec3& v)
+    {
+        x += v.x;
+        y += v.y;
+        z += v.z;
+        return *this;
+    }
+
+    Vec3& operator-=(const Vec3& v)
+    {
+        x -= v.x;
+        y -= v.y;
+        z -= v.z;
+        return *this;
+    }
+
+    Vec3& operator*=(T s)
+    {
+        x *= s;
+        y *= s;
+        z *= s;
+        return *this;
+    }
+
+    Vec3& operator/=(T s)
+    {
+        x /= s;
+        y /= s;
+        z /= s;
+        return *this;
+    }
+
+    /* math */
+    constexpr T dot(const Vec3& v) const
+    {
+        return x * v.x + y * v.y + z * v.z;
+    }
+
+    constexpr Vec3 cross(const Vec3& v) const
+    {
+        return {
+            y * v.z - z * v.y,
+            z * v.x - x * v.z,
+            x * v.y - y * v.x
+        };
+    }
+
+    T length() const { return std::sqrt(dot(*this)); }
+
+    Vec3 normalized() const
+    {
+        T L = length();
+        return (L == T(0)) ? *this : (*this / L);
+    }
 };
 
-typedef Vec2<float> Vec2f;
-typedef Vec2<int>   Vec2i;
-typedef Vec3<float> Vec3f;
-typedef Vec3<int>   Vec3i;
-
-template <class t> std::ostream& operator<<(std::ostream& s, Vec2<t>& v) {
-	s << "(" << v.x << ", " << v.y << ")\n";
-	return s;
+template <class T>
+inline std::ostream& operator<<(std::ostream& os, const Vec3<T>& v)
+{
+    return os << "(" << v.x << ", " << v.y << ", " << v.z << ")";
 }
 
-template <class t> std::ostream& operator<<(std::ostream& s, Vec3<t>& v) {
-	s << "(" << v.x << ", " << v.y << ", " << v.z << ")\n";
-	return s;
-}
+using Vec2f = Vec2<float>;
+using Vec2d = Vec2<double>;
+using Vec2i = Vec2<int>;
 
-#endif //__GEOMETRY_H__
+using Vec3f = Vec3<float>;
+using Vec3d = Vec3<double>;
+using Vec3i = Vec3<int>;
+
+#endif // VEC_MATH_HPP
