@@ -2,17 +2,16 @@
 #include "libs/stb_image.h"
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
+#include <array>
 #include <vector>
 
 #include "geometry.h"
+#include "renderer.h"
 #include "model.h"
 #include "libs/stb_image_write.h"
+#include "libs/tgaimage.h"
 
-#include "tgaimage.h"
 
-
-const TGAColor WHITE = TGAColor(255, 255, 255, 255);
-const TGAColor RED = TGAColor(255, 0, 0, 255);
 const auto TGA_FILE_NAME = "output.tga";
 const auto OUTPUT_FILE_NAME = "output.png";
 constexpr int width = 800;
@@ -34,51 +33,9 @@ void convertTGAtoPNG(const char* inFile, const char* outFile)
     stbi_image_free(data);
 }
 
-//Bresenham-like algorithm.
-void line(int x0, int y0, int x1, int y1, TGAImage& image, const TGAColor& color)
+
+void draw_vertices(TGAImage image)
 {
-    bool steep = false;
-
-    // if steep, simplify
-    if (std::abs(x0 - x1) < std::abs(y0 - y1)) {
-        std::swap(x0, y0);
-        std::swap(x1, y1);
-        steep = true;
-    }
-
-    // left to right
-    if (x0 > x1) {
-        std::swap(x0, x1);
-        std::swap(y0, y1);
-    }
-
-    const int dx = x1 - x0;
-    const int dy = std::abs(y1 - y0);
-    int error = dx / 2;
-
-    const int yStep = (y0 < y1) ? 1 : -1;
-    int y = y0;
-
-    // rasterize
-    for (int x = x0; x <= x1; ++x) {
-        if (steep)
-            image.set(y, x, color);
-        else
-            image.set(x, y, color);
-
-        error -= dy;
-        if (error < 0) {
-            y += yStep;
-            error += dx;
-        }
-    }
-}
-
-
-int main(int argc, char** argv)
-
-{
-    TGAImage image(width, height, TGAImage::RGB);
     auto model = Model("carrot_soup/carrot_soup.obj");
 
     for (int i = 0; i < model.nfaces(); i++)
@@ -95,8 +52,22 @@ int main(int argc, char** argv)
             line(x0, y0, x1, y1, image, WHITE);
         }
     }
+}
 
-    image.set(52, 41, RED);
+
+int main(int argc, char** argv)
+
+{
+    TGAImage image(width, height, TGAImage::RGB);
+    draw_vertices(image);
+
+    const std::array t0 = {Vec2i(800, 70), Vec2i(50, 160), Vec2i(70, 80)};
+    const std::array t1 = {Vec2i(180, 50), Vec2i(150, 1), Vec2i(70, 180)};
+    const std::array t2 = {Vec2i(180, 150), Vec2i(120, 160), Vec2i(130, 180)};
+
+    triangle(t0[0], t0[1], t0[2], image, RED);
+    triangle(t1[0], t1[1], t1[2], image, WHITE);
+    triangle(t2[0], t2[1], t2[2], image, GREEN);
     image.flip_vertically();
 
     image.write_tga_file(TGA_FILE_NAME);
