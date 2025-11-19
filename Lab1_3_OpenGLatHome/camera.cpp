@@ -1,10 +1,7 @@
 #include "camera.h"
 
 #include <cmath>
-
-#ifndef M_PI
-#define M_PI 3.14159265358979323846
-#endif
+#include <numbers>
 
 namespace
 {
@@ -61,7 +58,7 @@ Vec3f Camera::project(const Vec3f& vertex) const
         vz = (vz >= 0.0f) ? kEpsilon : -kEpsilon;
     }
 
-    const float fov_rad = fov_deg_ * static_cast<float>(M_PI) / 180.0f;
+    const float fov_rad = fov_deg_ * std::numbers::pi_v<float> / 180.0f;
     const float f = 1.0f / std::tan(fov_rad / 2.0f);
  // matrix equiv. basically the same.
     const float px = (vx / -vz) * f * aspect_;

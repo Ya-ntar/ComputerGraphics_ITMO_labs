@@ -9,11 +9,8 @@
 #include <cstdio>
 #include <iostream>
 #include <limits>
+#include <numbers>
 #include <vector>
-
-#ifndef M_PI
-#define M_PI 3.14159265358979323846
-#endif
 
 #include "geometry.h"
 #include "model.h"
@@ -130,9 +127,9 @@ namespace
         {
             std::cout << frame << std::endl;
             const float progress = static_cast<float>(frame) / frame_count;
-            const float pulse = 1.0f + pulse_amplitude * std::sin(progress * pulse_cycles * 2.0f * static_cast<float>(M_PI));
+            const float pulse = 1.0f + pulse_amplitude * std::sin(progress * pulse_cycles * 2.0f * std::numbers::pi_v<float>);
             
-            const float angle = start_angle + (2.0f * static_cast<float>(M_PI) * frame) / frame_count;
+            const float angle = start_angle + (2.0f * std::numbers::pi_v<float> * frame) / frame_count;
             const float horizontal_distance = base_horizontal_distance * pulse;
             const float x = std::sin(angle) * horizontal_distance;
             const float z = std::cos(angle) * horizontal_distance;
