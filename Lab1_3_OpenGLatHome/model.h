@@ -1,10 +1,10 @@
-#ifndef __MODEL_H__
-#define __MODEL_H__
+#pragma once
 
 #include <vector>
 #include "geometry.h"
 
-class Model {
+class Model
+{
 private:
     std::vector<Vec3f> verts_;
     std::vector<std::vector<int>> faces_;
@@ -17,7 +17,7 @@ public:
     void parse_vertice(std::istringstream& iss);
     void parse_texcoord(std::istringstream& iss);
     void parse_file(std::ifstream& in);
-    explicit Model(const char *filename);
+    explicit Model(const String& filename);
     ~Model();
     [[nodiscard]] size_t nverts() const;
     [[nodiscard]] size_t nfaces() const;
@@ -26,5 +26,3 @@ public:
     [[nodiscard]] Vec2f texcoord(int face_index, int vertex_index) const;
     [[nodiscard]] bool has_texcoords() const { return !texcoords_.empty(); }
 };
-
-#endif //__MODEL_H__

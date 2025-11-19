@@ -4,6 +4,7 @@
 
 #include "camera.h"
 #include "geometry.h"
+#include "light.h"
 #include "libs/tgaimage.h"
 #include "model.h"
 #include "texture.h"
@@ -22,7 +23,7 @@ class BasicShader : public IShader
 public:
     BasicShader(const Model& model,
                 const Camera& camera,
-                const Vec3f& light_direction,
+                const Light& light,
                 const Texture* texture);
 
     Vec3f vertex(int face_index, int vertex_index) override;
@@ -31,11 +32,10 @@ public:
 private:
     const Model& model_;
     const Camera& camera_;
-    Vec3f light_direction_;
+    const Light& light_;
     const Texture* texture_;
 
-    std::array<Vec3f, 3> world_coords_{};
-    std::array<Vec3f, 3> screen_coords_{};
-    std::array<Vec2f, 3> uv_coords_{};
+    std::array<Vec3f, 3> world_coords_;
+    std::array<Vec3f, 3> screen_coords_;
+    std::array<Vec2f, 3> uv_coords_;
 };
-

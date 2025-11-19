@@ -17,7 +17,7 @@ float wrap_coord(float value)
     }
     return wrapped;
 }
-} // namespace
+}
 
 Texture::Texture(const std::string& path)
 {
@@ -33,7 +33,8 @@ Texture::Texture(const std::string& path)
     width_ = width;
     height_ = height;
     channels_ = 3;
-    data_.assign(pixels, pixels + width_ * height_ * channels_);
+    const size_t pixel_count = width_ * height_ * channels_;
+    data_.assign(pixels, pixels + pixel_count);
     stbi_image_free(pixels);
 }
 
@@ -56,4 +57,3 @@ Vec3f Texture::sample(const Vec2f& uv) const
     const float b = data_[index + 2] / 255.0f;
     return Vec3f(r, g, b);
 }
-

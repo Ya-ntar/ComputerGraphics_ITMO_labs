@@ -19,7 +19,7 @@ float clamp_depth(float value)
     }
     return value;
 }
-} // namespace
+}
 
 Camera::Camera(const Vec3f& position,
                const Vec3f& target,
@@ -72,4 +72,3 @@ Vec3f Camera::project(const Vec3f& vertex) const
 
     return {sx, sy, sz};
 }
-

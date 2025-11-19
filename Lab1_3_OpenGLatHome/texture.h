@@ -15,9 +15,9 @@ public:
     [[nodiscard]] Vec3f sample(const Vec2f& uv) const;
 
 private:
-    int width_{0};
-    int height_{0};
-    int channels_{0};
+    int width_;
+    int height_;
+    int channels_;
     std::vector<unsigned char> data_;
 };
 

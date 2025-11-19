@@ -3,6 +3,7 @@
 
 #include <cmath>
 #include <ostream>
+#include <string>
 
 
 template <class T>
@@ -178,5 +179,7 @@ using Vec2i = Vec2<int>;
 using Vec3f = Vec3<float>;
 using Vec3d = Vec3<double>;
 using Vec3i = Vec3<int>;
+
+using String = std::string;
 
 #endif // VEC_MATH_HPP

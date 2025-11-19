@@ -8,6 +8,7 @@ add_executable(Lab1_3_OpenGLatHome main.cpp
         camera.cpp
         shader.cpp
         texture.cpp
+        light.cpp
         geometry.h
         model.h
         model.cpp)
