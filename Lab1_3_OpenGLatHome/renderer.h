@@ -170,12 +170,12 @@ namespace renderer
                     screen_vertices[2].z * v;
 
                 const int index = x + y * width;
-                if (z > zbuffer[index])
+                if (z > zbuffer.at(index))
                 {
                     TGAColor color;
                     if (!shader.fragment(Vec3f(w, u, v), color))
                     {
-                        zbuffer[index] = z;
+                        zbuffer.at(index) = z;
                         image.set(x, y, color);
                     }
                 }

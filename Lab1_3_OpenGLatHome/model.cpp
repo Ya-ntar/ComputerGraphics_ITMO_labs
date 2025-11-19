@@ -13,8 +13,6 @@ void Model::parse_face(std::istringstream& iss)
 
     std::vector<int> face;
     std::vector<int> uv_indices;
-    face.reserve(3);
-    uv_indices.reserve(3);
 
     std::string vertdef;
     while (iss >> vertdef)
@@ -60,7 +58,7 @@ void Model::parse_face(std::istringstream& iss)
     }
 }
 
-void Model::parse_vertice(std::istringstream& iss)
+void Model::parse_vertex(std::istringstream& iss)
 {
     char c;
     Vec3f v;
@@ -102,7 +100,7 @@ void Model::parse_file(std::ifstream& in)
         std::istringstream iss(line);
         if (line.rfind("v ", 0) == 0)
         {
-            parse_vertice(iss);
+            parse_vertex(iss);
         }
         else if (line.rfind("vt ", 0) == 0)
         {
@@ -114,7 +112,7 @@ void Model::parse_file(std::ifstream& in)
         }
     }
 
-    std::cerr << "# v: " << verts_.size() << "   f: " << faces_.size() << std::endl;
+    std::cout << "# v: " << verts_.size() << "   f: " << faces_.size() << std::endl;
 }
 
 Model::Model(const String& filename)
@@ -126,9 +124,68 @@ Model::Model(const String& filename)
     }
 
     parse_file(in);
+    compute_vertex_normals();
 }
 
 Model::~Model() = default;
+
+void Model::compute_vertex_normals()
+{
+    vertex_normals_.assign(verts_.size(), Vec3f(0.0f, 0.0f, 0.0f));
+
+    for (size_t i = 0; i < faces_.size(); ++i)
+    {
+        const auto& face = faces_[i];
+        if (face.size() < 3)
+        {
+            continue;
+        }
+
+        const Vec3f& v0 = verts_.at(face[0]);
+        const Vec3f& v1 = verts_.at(face[1]);
+        const Vec3f& v2 = verts_.at(face[2]);
+
+        const Vec3f edge0 = v1 - v0;
+        const Vec3f edge1 = v2 - v0;
+        const Vec3f face_normal_vec = edge1.cross(edge0);
+        const float area = face_normal_vec.length() * 0.5f;
+
+        if (area > 1e-6f)
+        {
+            const Vec3f face_normal = face_normal_vec.normalized();
+            for (size_t j = 0; j < face.size(); ++j)
+            {
+                const int vertex_idx = face.at(j);
+                if (vertex_idx >= 0 && vertex_idx < static_cast<int>(vertex_normals_.size()))
+                {
+                    vertex_normals_.at(vertex_idx) = vertex_normals_.at(vertex_idx) + face_normal * area;
+                }
+            }
+        }
+    }
+
+    for (auto& normal : vertex_normals_)
+    {
+        const float len = normal.length();
+        if (len > 1e-6f)
+        {
+            normal = normal / len;
+        }
+        else
+        {
+            normal = Vec3f(0.0f, 0.0f, 1.0f);
+        }
+    }
+}
+
+Vec3f Model::normal(int vertex_index) const
+{
+    if (vertex_index < 0 || vertex_index >= static_cast<int>(vertex_normals_.size()))
+    {
+        return Vec3f(0.0f, 0.0f, 1.0f);
+    }
+    return vertex_normals_.at(vertex_index);
+}
 
 size_t Model::nverts() const
 {
@@ -161,7 +218,7 @@ Vec2f Model::texcoord(int face_index, int vertex_index) const
     {
         return Vec2f(0.0f, 0.0f);
     }
-    const int tex_index = indices[vertex_index];
+    const int tex_index = indices.at(vertex_index);
     if (tex_index < 0 || tex_index >= static_cast<int>(texcoords_.size()))
     {
         return Vec2f(0.0f, 0.0f);

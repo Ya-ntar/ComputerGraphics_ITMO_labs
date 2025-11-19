@@ -1,10 +1,8 @@
-#ifndef VEC_MATH_HPP
-#define VEC_MATH_HPP
+#pragma once
 
 #include <cmath>
 #include <ostream>
 #include <string>
-
 
 template <class T>
 struct Vec2
@@ -75,7 +73,6 @@ inline std::ostream& operator<<(std::ostream& os, const Vec2<T>& v)
     return os << "(" << v.x << ", " << v.y << ")";
 }
 
-
 template <class T>
 struct Vec3
 {
@@ -142,7 +139,6 @@ struct Vec3
         return *this;
     }
 
-    /* math */
     constexpr T dot(const Vec3& v) const
     {
         return x * v.x + y * v.y + z * v.z;
@@ -181,5 +177,3 @@ using Vec3d = Vec3<double>;
 using Vec3i = Vec3<int>;
 
 using String = std::string;
-
-#endif // VEC_MATH_HPP

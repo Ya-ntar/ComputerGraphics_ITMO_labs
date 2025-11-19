@@ -20,6 +20,9 @@ namespace
 }
 
 Texture::Texture(const std::string& path)
+    : width_(0),
+      height_(0),
+      channels_(3)
 {
     int width = 0;
     int height = 0;
@@ -52,8 +55,8 @@ Vec3f Texture::sample(const Vec2f& uv) const
     const int y = std::clamp(static_cast<int>((1.0f - v) * height_), 0, height_ - 1);
 
     const int index = (x + y * width_) * channels_;
-    const float r = data_[index] / 255.0f;
-    const float g = data_[index + 1] / 255.0f;
-    const float b = data_[index + 2] / 255.0f;
+    const float r = data_.at(index) / 255.0f;
+    const float g = data_.at(index + 1) / 255.0f;
+    const float b = data_.at(index + 2) / 255.0f;
     return Vec3f(r, g, b);
 }

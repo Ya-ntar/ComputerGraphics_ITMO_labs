@@ -10,6 +10,7 @@
 #include <iostream>
 #include <limits>
 #include <numbers>
+#include <stdexcept>
 #include <vector>
 
 #include "geometry.h"
@@ -33,7 +34,7 @@ namespace
     const String kDepthBufferTga = "zbuffer.tga";
     const String kDepthBufferPng = "zbuffer.png";
 
-    const Light kLight(Vec3f(0.0f, 0.0f, -1.0f));
+    const Light kLight(Vec3f(0.0f, 0.0f, -1.0f), {1, 1, 1}, 1.5);
 
     struct Framebuffer
     {
@@ -73,7 +74,7 @@ namespace
             for (int y = 0; y < kHeight; ++y)
             {
                 const int index = x + y * kWidth;
-                const float depth_value = depth[index];
+                const float depth_value = depth.at(index);
                 const float clamped = std::clamp(depth_value, 0.0f, 1.0f);
                 const auto value = static_cast<unsigned char>(clamped * 255.0f);
                 depth_image.set(x, y, TGAColor(value, 1));
@@ -84,7 +85,7 @@ namespace
         depth_image.write_tga_file(file_path);
     }
 
-    bool convert_tga_to_png(const char* input_path, const char* output_path)
+    void convert_tga_to_png(const char* input_path, const char* output_path)
     {
         int width = 0;
         int height = 0;
@@ -92,14 +93,16 @@ namespace
         unsigned char* data = stbi_load(input_path, &width, &height, &channels, 0);
         if (!data)
         {
-            std::cerr << "Failed to load " << input_path << std::endl;
-            return false;
+            throw std::runtime_error("Failed to load " + std::string(input_path));
         }
 
         const int stride_in_bytes = width * channels;
         const int result = stbi_write_png(output_path, width, height, channels, data, stride_in_bytes);
         stbi_image_free(data);
-        return result != 0;
+        if (result == 0)
+        {
+            throw std::runtime_error("Failed to write PNG file: " + std::string(output_path));
+        }
     }
 
     void render_rotation_sequence(const Model& model,
@@ -145,10 +148,10 @@ namespace
                 start_camera.get_screen_height());
 
             const Vec3f light_direction = (target - new_position).normalized();
-            const Light light(light_direction);
+            const Light light(light_direction, kLight.get_color(), kLight.get_intensity());
 
             Framebuffer framebuffer{};
-            BasicShader shader(model, camera, light, &texture);
+            PhongShader shader(model, camera, light, &texture);
             render_model(model, framebuffer, shader);
 
             framebuffer.color.flip_vertically();
@@ -165,8 +168,8 @@ int main()
     const Model model(kModelPath);
     const Texture diffuse_texture(kDiffuseTexturePath);
     const Camera camera(
-        Vec3f(0.0f, 1.0f, -1.0f),
-        Vec3f(0.0f, 0.0f, 0.0f),
+        Vec3f(0.0f, 0.5f, 0.3f),
+        Vec3f(0.0f, 0.2f, 0.0f),
         Vec3f(0.0f, 1.0f, 0.0f),
         60.0f,
         static_cast<float>(kWidth) / static_cast<float>(kHeight),
@@ -178,7 +181,7 @@ int main()
     render_rotation_sequence(model, diffuse_texture, camera, "gif");
 
     Framebuffer framebuffer{};
-    BasicShader shader(model, camera, kLight, &diffuse_texture);
+    PhongShader shader(model, camera, kLight, &diffuse_texture);
     render_model(model, framebuffer, shader);
 
     framebuffer.color.flip_vertically();
