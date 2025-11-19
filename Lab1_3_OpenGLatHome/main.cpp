@@ -13,13 +13,16 @@
 #include "model.h"
 #include "renderer.h"
 #include "camera.h"
+#include "shader.h"
+#include "texture.h"
 #include "libs/tgaimage.h"
 
 namespace
 {
 constexpr int kWidth = 1800;
 constexpr int kHeight = 1800;
-constexpr char kModelPath[] = "carrot_soup/african_head.obj";
+constexpr char kModelPath[] = "ImageToStl.com_gabriel_plush_ultrakill/gabriel_plush_ultrakill.obj";
+constexpr char kDiffuseTexturePath[] = "ImageToStl.com_gabriel_plush_ultrakill/3DModel_LowPoly_baseColor.png";
 
 constexpr char kColorBufferTga[] = "output.tga";
 constexpr char kColorBufferPng[] = "output.png";
@@ -40,50 +43,21 @@ struct Framebuffer
     std::vector<float> depth;
 };
 
-Vec3f face_normal(const Vec3f& v0, const Vec3f& v1, const Vec3f& v2)
-{
-    const Vec3f edge1 = v2 - v0;
-    const Vec3f edge2 = v1 - v0;
-    return edge1.cross(edge2).normalized();
-}
-
-void render_model(const Model& model, Framebuffer& framebuffer, const Camera& camera)
+void render_model(const Model& model, Framebuffer& framebuffer, IShader& shader)
 {
     for (int face_index = 0; face_index < model.nfaces(); ++face_index)
     {
-        const std::vector<int>& face = model.face(face_index);
-
         std::array<Vec3f, 3> screen_vertices{};
-        std::array<Vec3f, 3> world_vertices{};
         for (int vertex_index = 0; vertex_index < 3; ++vertex_index)
         {
-            const Vec3f vertex = model.vert(face[vertex_index]);
-            const Vec3f projected = camera.project(vertex);
-            screen_vertices[vertex_index] = projected;
-            world_vertices[vertex_index] = vertex;
+            screen_vertices[vertex_index] = shader.vertex(face_index, vertex_index);
         }
-
-        const Vec3f normal = face_normal(
-            world_vertices[0],
-            world_vertices[1],
-            world_vertices[2]);
-
-        const float intensity = normal.dot(kLightDirection);
-        if (intensity <= 0.0f)
-        {
-            continue;
-        }
-
-        const unsigned char color_value = static_cast<unsigned char>(intensity * 255.0f);
-        const TGAColor triangle_color(color_value, color_value, color_value, 255);
 
         renderer::barycentric_triangle(
-            screen_vertices[0],
-            screen_vertices[1],
-            screen_vertices[2],
+            screen_vertices,
             framebuffer.color,
-            triangle_color,
-            framebuffer.depth);
+            framebuffer.depth,
+            shader);
     }
 }
 
@@ -128,8 +102,9 @@ int main()
 {
     Framebuffer framebuffer{};
     const Model model(kModelPath);
+    const Texture diffuse_texture(kDiffuseTexturePath);
     const Camera camera(
-        Vec3f(0.0f, 0.0f, 3.f),
+        Vec3f(0.0f, 0.0f, 1.f),
         Vec3f(0.0f, 0.0f, 0.0f),
         Vec3f(0.0f, 1.0f, 0.0f),
         60.0f,
@@ -139,7 +114,8 @@ int main()
         kWidth,
         kHeight);
 
-    render_model(model, framebuffer, camera);
+    BasicShader shader(model, camera, kLightDirection, &diffuse_texture);
+    render_model(model, framebuffer, shader);
 
     framebuffer.color.flip_vertically();
     framebuffer.color.write_tga_file(kColorBufferTga);

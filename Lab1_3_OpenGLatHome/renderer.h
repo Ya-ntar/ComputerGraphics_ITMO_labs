@@ -1,11 +1,13 @@
 #pragma once
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <vector>
 
 #include "geometry.h"
 #include "libs/tgaimage.h"
+#include "shader.h"
 
 namespace renderer
 {
@@ -108,25 +110,28 @@ inline void colored_triangle(Vec2i t0, Vec2i t1, Vec2i t2, TGAImage& image, cons
     }
 }
 
-inline void barycentric_triangle(const Vec3f t0, const Vec3f t1, const Vec3f t2,
-                                 TGAImage& image, const TGAColor& color,
-                                 std::vector<float>& zbuffer)
+inline void barycentric_triangle(const std::array<Vec3f, 3>& screen_vertices,
+                                 TGAImage& image,
+                                 std::vector<float>& zbuffer,
+                                 IShader& shader)
 {
     const int width = image.get_width();
     const int height = image.get_height();
 
-    int min_x = static_cast<int>(std::floor(std::min({t0.x, t1.x, t2.x})));
-    int max_x = static_cast<int>(std::ceil(std::max({t0.x, t1.x, t2.x})));
-    int min_y = static_cast<int>(std::floor(std::min({t0.y, t1.y, t2.y})));
-    int max_y = static_cast<int>(std::ceil(std::max({t0.y, t1.y, t2.y})));
+    int min_x = static_cast<int>(std::floor(std::min({screen_vertices[0].x, screen_vertices[1].x, screen_vertices[2].x})));
+    int max_x = static_cast<int>(std::ceil(std::max({screen_vertices[0].x, screen_vertices[1].x, screen_vertices[2].x})));
+    int min_y = static_cast<int>(std::floor(std::min({screen_vertices[0].y, screen_vertices[1].y, screen_vertices[2].y})));
+    int max_y = static_cast<int>(std::ceil(std::max({screen_vertices[0].y, screen_vertices[1].y, screen_vertices[2].y})));
 
     min_x = std::max(0, min_x);
     max_x = std::min(width - 1, max_x);
     min_y = std::max(0, min_y);
     max_y = std::min(height - 1, max_y);
 
-    const Vec2f v0(t1.x - t0.x, t1.y - t0.y);
-    const Vec2f v1(t2.x - t0.x, t2.y - t0.y);
+    const Vec2f v0(screen_vertices[1].x - screen_vertices[0].x,
+                   screen_vertices[1].y - screen_vertices[0].y);
+    const Vec2f v1(screen_vertices[2].x - screen_vertices[0].x,
+                   screen_vertices[2].y - screen_vertices[0].y);
 
     const float dot00 = v0.x * v0.x + v0.y * v0.y;
     const float dot01 = v0.x * v1.x + v0.y * v1.y;
@@ -144,7 +149,8 @@ inline void barycentric_triangle(const Vec3f t0, const Vec3f t1, const Vec3f t2,
     {
         for (int x = min_x; x <= max_x; ++x)
         {
-            const Vec2f v2(static_cast<float>(x) - t0.x, static_cast<float>(y) - t0.y);
+            const Vec2f v2(static_cast<float>(x) - screen_vertices[0].x,
+                           static_cast<float>(y) - screen_vertices[0].y);
             const float dot02 = v0.x * v2.x + v0.y * v2.y;
             const float dot12 = v1.x * v2.x + v1.y * v2.y;
 
@@ -157,13 +163,19 @@ inline void barycentric_triangle(const Vec3f t0, const Vec3f t1, const Vec3f t2,
             }
 
             const float w = 1.0f - u - v;
-            const float z = t0.z * w + t1.z * u + t2.z * v;
+            const float z = screen_vertices[0].z * w +
+                            screen_vertices[1].z * u +
+                            screen_vertices[2].z * v;
 
             const int index = x + y * width;
             if (z > zbuffer[index])
             {
-                zbuffer[index] = z;
-                image.set(x, y, color);
+                TGAColor color;
+                if (!shader.fragment(Vec3f(w, u, v), color))
+                {
+                    zbuffer[index] = z;
+                    image.set(x, y, color);
+                }
             }
         }
     }
