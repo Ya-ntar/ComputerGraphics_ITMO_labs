@@ -5,6 +5,7 @@ set(CMAKE_CXX_STANDARD 20)
 
 add_executable(Lab1_3_OpenGLatHome main.cpp
         libs/tgaimage.cpp
+        camera.cpp
         geometry.h
         model.h
         model.cpp)
