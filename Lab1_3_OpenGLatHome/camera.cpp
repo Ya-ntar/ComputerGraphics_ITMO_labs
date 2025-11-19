@@ -1,24 +1,12 @@
 #include "camera.h"
 
+#include <algorithm>
 #include <cmath>
 #include <numbers>
 
 namespace
 {
-constexpr float kEpsilon = 1e-6f;
-
-float clamp_depth(float value)
-{
-    if (value < 0.0f)
-    {
-        return 0.0f;
-    }
-    if (value > 1.0f)
-    {
-        return 1.0f;
-    }
-    return value;
-}
+    constexpr float kEpsilon = 1e-6f;
 }
 
 Camera::Camera(const Vec3f& position,
@@ -61,10 +49,10 @@ Vec3f Camera::project(const Vec3f& vertex) const
     const float fov_rad = fov_deg_ * std::numbers::pi_v<float> / 180.0f;
     const float f = 1.0f / std::tan(fov_rad / 2.0f);
  // matrix equiv. basically the same.
+    // matrix equiv. basically the same.
     const float px = (vx / -vz) * f * aspect_;
     const float py = (vy / -vz) * f;
-    float normalized_depth = (-(vz) - near_plane_) / (far_plane_ - near_plane_);
-    normalized_depth = clamp_depth(normalized_depth);
+    const float normalized_depth = std::clamp((-(vz) - near_plane_) / (far_plane_ - near_plane_), 0.0f, 1.0f);
 
     const float sx = (px + 1.0f) * 0.5f * static_cast<float>(screen_width_);
     const float sy = (py + 1.0f) * 0.5f * static_cast<float>(screen_height_);

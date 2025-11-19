@@ -20,4 +20,3 @@ private:
     int channels_;
     std::vector<unsigned char> data_;
 };
-

@@ -8,15 +8,15 @@
 
 namespace
 {
-float wrap_coord(float value)
-{
-    float wrapped = std::fmod(value, 1.0f);
-    if (wrapped < 0.0f)
+    float wrap_coord(float value)
     {
-        wrapped += 1.0f;
+        float wrapped = std::fmod(value, 1.0f);
+        if (wrapped < 0.0f)
+        {
+            wrapped += 1.0f;
+        }
+        return wrapped;
     }
-    return wrapped;
-}
 }
 
 Texture::Texture(const std::string& path)
@@ -48,8 +48,8 @@ Vec3f Texture::sample(const Vec2f& uv) const
     const float u = wrap_coord(uv.x);
     const float v = wrap_coord(uv.y);
 
-    const int x = std::min(width_ - 1, static_cast<int>(u * width_));
-    const int y = std::min(height_ - 1, static_cast<int>((1.0f - v) * height_));
+    const int x = std::clamp(static_cast<int>(u * width_), 0, width_ - 1);
+    const int y = std::clamp(static_cast<int>((1.0f - v) * height_), 0, height_ - 1);
 
     const int index = (x + y * width_) * channels_;
     const float r = data_[index] / 255.0f;

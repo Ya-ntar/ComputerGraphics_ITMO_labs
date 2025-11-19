@@ -4,9 +4,9 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "libs/stb_image_write.h"
 
+#include <algorithm>
 #include <array>
 #include <cmath>
-#include <cstdio>
 #include <iostream>
 #include <limits>
 #include <numbers>
@@ -65,7 +65,6 @@ namespace
         }
     }
 
-    
     void dump_depth_buffer(const std::vector<float>& depth, const char* file_path)
     {
         TGAImage depth_image(kWidth, kHeight, TGAImage::GRAYSCALE);
@@ -75,7 +74,7 @@ namespace
             {
                 const int index = x + y * kWidth;
                 const float depth_value = depth[index];
-                const float clamped = depth_value < 0.0f ? 0.0f : (depth_value > 1.0f ? 1.0f : depth_value);
+                const float clamped = std::clamp(depth_value, 0.0f, 1.0f);
                 const auto value = static_cast<unsigned char>(clamped * 255.0f);
                 depth_image.set(x, y, TGAColor(value, 1));
             }
@@ -93,7 +92,7 @@ namespace
         unsigned char* data = stbi_load(input_path, &width, &height, &channels, 0);
         if (!data)
         {
-            printf("Failed to load %s\n", input_path);
+            std::cerr << "Failed to load " << input_path << std::endl;
             return false;
         }
 
@@ -102,8 +101,6 @@ namespace
         stbi_image_free(data);
         return result != 0;
     }
-
-
 
     void render_rotation_sequence(const Model& model,
                                   const Texture& texture,
@@ -114,11 +111,11 @@ namespace
         constexpr float pulse_amplitude = 0.3f;
         constexpr float pulse_cycles = 2.0f;
         const String output_dir = "gif/";
-        
+
         const Vec3f target = start_camera.get_target();
         const Vec3f start_position = start_camera.get_position();
         const Vec3f to_camera = start_position - target;
-        
+
         const float base_height = to_camera.y;
         const float base_horizontal_distance = std::sqrt(to_camera.x * to_camera.x + to_camera.z * to_camera.z);
         const float start_angle = std::atan2(to_camera.x, to_camera.z);
@@ -127,8 +124,9 @@ namespace
         {
             std::cout << frame << std::endl;
             const float progress = static_cast<float>(frame) / frame_count;
-            const float pulse = 1.0f + pulse_amplitude * std::sin(progress * pulse_cycles * 2.0f * std::numbers::pi_v<float>);
-            
+            const float pulse = 1.0f + pulse_amplitude * std::sin(
+                progress * pulse_cycles * 2.0f * std::numbers::pi_v<float>);
+
             const float angle = start_angle + (2.0f * std::numbers::pi_v<float> * frame) / frame_count;
             const float horizontal_distance = base_horizontal_distance * pulse;
             const float x = std::sin(angle) * horizontal_distance;
@@ -158,19 +156,16 @@ namespace
             const String frame_png = output_dir + output_prefix + "_" + std::to_string(frame) + ".png";
             framebuffer.color.write_tga_file(frame_tga.c_str());
             convert_tga_to_png(frame_tga.c_str(), frame_png.c_str());
-
         }
     }
-
 }
 
 int main()
 {
-    Framebuffer framebuffer{};
     const Model model(kModelPath);
     const Texture diffuse_texture(kDiffuseTexturePath);
-    Camera camera(
-        Vec3f(0.0f, 1.0f, -1.f),
+    const Camera camera(
+        Vec3f(0.0f, 1.0f, -1.0f),
         Vec3f(0.0f, 0.0f, 0.0f),
         Vec3f(0.0f, 1.0f, 0.0f),
         60.0f,
@@ -180,8 +175,11 @@ int main()
         kWidth,
         kHeight);
 
-    BasicShader shader(model, camera, kLight, &diffuse_texture);
     render_rotation_sequence(model, diffuse_texture, camera, "gif");
+
+    Framebuffer framebuffer{};
+    BasicShader shader(model, camera, kLight, &diffuse_texture);
+    render_model(model, framebuffer, shader);
 
     framebuffer.color.flip_vertically();
     framebuffer.color.write_tga_file(kColorBufferTga.c_str());

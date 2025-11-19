@@ -22,12 +22,11 @@ void Model::parse_face(std::istringstream& iss)
         std::istringstream viss(vertdef);
         int vertex_index = 0;
         int tex_index = -1;
-        int normal_index = -1;
-        char slash;
 
         viss >> vertex_index;
         if (viss.peek() == '/')
         {
+            char slash;
             viss >> slash;
             if (viss.peek() != '/' && !viss.eof())
             {
@@ -35,6 +34,7 @@ void Model::parse_face(std::istringstream& iss)
             }
             if (viss.peek() == '/')
             {
+                int normal_index = -1;
                 viss >> slash >> normal_index;
             }
         }
@@ -65,6 +65,10 @@ void Model::parse_vertice(std::istringstream& iss)
     char c;
     Vec3f v;
     iss >> c >> v.x >> v.y >> v.z;
+    if (iss.fail())
+    {
+        return;
+    }
     verts_.push_back(v);
 }
 
@@ -73,6 +77,10 @@ void Model::parse_texcoord(std::istringstream& iss)
     char c1, c2;
     Vec2f uv;
     iss >> c1 >> c2 >> uv.x >> uv.y;
+    if (iss.fail())
+    {
+        return;
+    }
     texcoords_.push_back(uv);
 }
 

@@ -17,6 +17,3 @@ private:
     Vec3f color_;
     float intensity_;
 };
-
-
-

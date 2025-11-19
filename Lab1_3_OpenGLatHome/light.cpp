@@ -13,6 +13,3 @@ Light::Light(const Vec3f& direction, const Vec3f& color, float intensity)
       intensity_(intensity)
 {
 }
-
-
-
