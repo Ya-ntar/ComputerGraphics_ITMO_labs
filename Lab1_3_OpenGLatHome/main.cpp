@@ -5,9 +5,15 @@
 #include "libs/stb_image_write.h"
 
 #include <array>
+#include <cmath>
 #include <cstdio>
+#include <iostream>
 #include <limits>
 #include <vector>
+
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
 
 #include "geometry.h"
 #include "model.h"
@@ -20,8 +26,8 @@
 
 namespace
 {
-    constexpr int kWidth = 1800;
-    constexpr int kHeight = 1800;
+    constexpr int kWidth = 800;
+    constexpr int kHeight = 800;
     const String kModelPath = "ImageToStl.com_gabriel_plush_ultrakill/gabriel_plush_ultrakill.obj";
     const String kDiffuseTexturePath = "ImageToStl.com_gabriel_plush_ultrakill/3DModel_LowPoly_baseColor.png";
 
@@ -62,6 +68,7 @@ namespace
         }
     }
 
+    
     void dump_depth_buffer(const std::vector<float>& depth, const char* file_path)
     {
         TGAImage depth_image(kWidth, kHeight, TGAImage::GRAYSCALE);
@@ -98,6 +105,66 @@ namespace
         stbi_image_free(data);
         return result != 0;
     }
+
+
+
+    void render_rotation_sequence(const Model& model,
+                                  const Texture& texture,
+                                  const Camera& start_camera,
+                                  const String& output_prefix)
+    {
+        constexpr int frame_count = 20;
+        constexpr float pulse_amplitude = 0.3f;
+        constexpr float pulse_cycles = 2.0f;
+        const String output_dir = "gif/";
+        
+        const Vec3f target = start_camera.get_target();
+        const Vec3f start_position = start_camera.get_position();
+        const Vec3f to_camera = start_position - target;
+        
+        const float base_height = to_camera.y;
+        const float base_horizontal_distance = std::sqrt(to_camera.x * to_camera.x + to_camera.z * to_camera.z);
+        const float start_angle = std::atan2(to_camera.x, to_camera.z);
+
+        for (int frame = 0; frame < frame_count; ++frame)
+        {
+            std::cout << frame << std::endl;
+            const float progress = static_cast<float>(frame) / frame_count;
+            const float pulse = 1.0f + pulse_amplitude * std::sin(progress * pulse_cycles * 2.0f * static_cast<float>(M_PI));
+            
+            const float angle = start_angle + (2.0f * static_cast<float>(M_PI) * frame) / frame_count;
+            const float horizontal_distance = base_horizontal_distance * pulse;
+            const float x = std::sin(angle) * horizontal_distance;
+            const float z = std::cos(angle) * horizontal_distance;
+            const Vec3f new_position = target + Vec3f(x, base_height, z);
+
+            Camera camera(
+                new_position,
+                target,
+                start_camera.get_up(),
+                start_camera.get_fov_deg(),
+                start_camera.get_aspect(),
+                start_camera.get_near_plane(),
+                start_camera.get_far_plane(),
+                start_camera.get_screen_width(),
+                start_camera.get_screen_height());
+
+            const Vec3f light_direction = (target - new_position).normalized();
+            const Light light(light_direction);
+
+            Framebuffer framebuffer{};
+            BasicShader shader(model, camera, light, &texture);
+            render_model(model, framebuffer, shader);
+
+            framebuffer.color.flip_vertically();
+            const String frame_tga = "debug.tga";
+            const String frame_png = output_dir + output_prefix + "_" + std::to_string(frame) + ".png";
+            framebuffer.color.write_tga_file(frame_tga.c_str());
+            convert_tga_to_png(frame_tga.c_str(), frame_png.c_str());
+
+        }
+    }
+
 }
 
 int main()
@@ -105,8 +172,8 @@ int main()
     Framebuffer framebuffer{};
     const Model model(kModelPath);
     const Texture diffuse_texture(kDiffuseTexturePath);
-    const Camera camera(
-        Vec3f(0.0f, 0.0f, 1.f),
+    Camera camera(
+        Vec3f(0.0f, 1.0f, -1.f),
         Vec3f(0.0f, 0.0f, 0.0f),
         Vec3f(0.0f, 1.0f, 0.0f),
         60.0f,
@@ -117,7 +184,7 @@ int main()
         kHeight);
 
     BasicShader shader(model, camera, kLight, &diffuse_texture);
-    render_model(model, framebuffer, shader);
+    render_rotation_sequence(model, diffuse_texture, camera, "gif");
 
     framebuffer.color.flip_vertically();
     framebuffer.color.write_tga_file(kColorBufferTga.c_str());

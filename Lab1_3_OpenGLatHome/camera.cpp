@@ -2,9 +2,12 @@
 
 #include <cmath>
 
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
+
 namespace
 {
-constexpr float kPi = 3.1415926535f;
 constexpr float kEpsilon = 1e-6f;
 
 float clamp_depth(float value)
@@ -58,9 +61,9 @@ Vec3f Camera::project(const Vec3f& vertex) const
         vz = (vz >= 0.0f) ? kEpsilon : -kEpsilon;
     }
 
-    const float fov_rad = fov_deg_ * kPi / 180.0f;
+    const float fov_rad = fov_deg_ * static_cast<float>(M_PI) / 180.0f;
     const float f = 1.0f / std::tan(fov_rad / 2.0f);
-
+ // matrix equiv. basically the same.
     const float px = (vx / -vz) * f * aspect_;
     const float py = (vy / -vz) * f;
     float normalized_depth = (-(vz) - near_plane_) / (far_plane_ - near_plane_);
