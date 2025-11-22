@@ -11,4 +11,5 @@ add_executable(Lab1_3_OpenGLatHome main.cpp
         light.cpp
         geometry.h
         model.h
-        model.cpp)
+        model.cpp
+        shadertoy.h)
