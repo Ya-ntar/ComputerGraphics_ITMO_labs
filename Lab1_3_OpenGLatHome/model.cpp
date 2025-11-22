@@ -133,9 +133,8 @@ void Model::compute_vertex_normals()
 {
     vertex_normals_.assign(verts_.size(), Vec3f(0.0f, 0.0f, 0.0f));
 
-    for (size_t i = 0; i < faces_.size(); ++i)
+    for (const auto & face : faces_)
     {
-        const auto& face = faces_[i];
         if (face.size() < 3)
         {
             continue;
@@ -153,9 +152,8 @@ void Model::compute_vertex_normals()
         if (area > 1e-6f)
         {
             const Vec3f face_normal = face_normal_vec.normalized();
-            for (size_t j = 0; j < face.size(); ++j)
+            for (int vertex_idx : face)
             {
-                const int vertex_idx = face.at(j);
                 if (vertex_idx >= 0 && vertex_idx < static_cast<int>(vertex_normals_.size()))
                 {
                     vertex_normals_.at(vertex_idx) = vertex_normals_.at(vertex_idx) + face_normal * area;
@@ -182,7 +180,7 @@ Vec3f Model::normal(int vertex_index) const
 {
     if (vertex_index < 0 || vertex_index >= static_cast<int>(vertex_normals_.size()))
     {
-        return Vec3f(0.0f, 0.0f, 1.0f);
+        return {0.0f, 0.0f, 1.0f};
     }
     return vertex_normals_.at(vertex_index);
 }
@@ -211,17 +209,17 @@ Vec2f Model::texcoord(int face_index, int vertex_index) const
 {
     if (texcoord_indices_.empty())
     {
-        return Vec2f(0.0f, 0.0f);
+        return {0.0f, 0.0f};
     }
     const auto& indices = texcoord_indices_.at(face_index);
     if (vertex_index >= static_cast<int>(indices.size()))
     {
-        return Vec2f(0.0f, 0.0f);
+        return {0.0f, 0.0f};
     }
     const int tex_index = indices.at(vertex_index);
     if (tex_index < 0 || tex_index >= static_cast<int>(texcoords_.size()))
     {
-        return Vec2f(0.0f, 0.0f);
+        return {0.0f, 0.0f};
     }
     return texcoords_.at(tex_index);
 }

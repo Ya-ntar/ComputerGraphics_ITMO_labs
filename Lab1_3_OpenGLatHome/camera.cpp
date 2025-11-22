@@ -48,8 +48,6 @@ Vec3f Camera::project(const Vec3f& vertex) const
 
     const float fov_rad = fov_deg_ * std::numbers::pi_v<float> / 180.0f;
     const float f = 1.0f / std::tan(fov_rad / 2.0f);
- // matrix equiv. basically the same.
-    // matrix equiv. basically the same.
     const float px = (vx / -vz) * f * aspect_;
     const float py = (vy / -vz) * f;
     const float normalized_depth = std::clamp((-(vz) - near_plane_) / (far_plane_ - near_plane_), 0.0f, 1.0f);
